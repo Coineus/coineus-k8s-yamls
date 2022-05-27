@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coineus-db
+  labels:
+    app: coineus-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coineus-db
+  template:
+    metadata:
+      labels:
+        app: coineus-db
+    spec:
+      containers:
+      - name: coineus-db
+        image: safderun/coineus-db:latest
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "postgres123"
+        - name: POSTGRES_DB
+          value: "coineusdb"
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgres-pv-claim
+        # resources:
+        #   limits:
+        #     cpu: 100m
+        #     memory: 1024Mi
+      volumes:
+      - name: postgres-pv-claim
+        persistentVolumeClaim:
+          claimName: postgres-pv-claim

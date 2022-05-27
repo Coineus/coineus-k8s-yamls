@@ -1,0 +1,214 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: coineus-db
+  labels:
+    app: coineus-db
+spec:
+  selector:
+    app: coineus-db
+  type: ClusterIP
+  ports:
+  - protocol: TCP
+    port: 5432
+    targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coineus-db
+  labels:
+    app: coineus-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coineus-db
+  template:
+    metadata:
+      labels:
+        app: coineus-db
+    spec:
+      containers:
+      - name: coineus-db
+        image: safderun/coineus-db:latest
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_USER
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          value: "postgres123"
+        - name: POSTGRES_DB
+          value: "coineusdb"
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: postgres-pv-claim
+        # resources:
+        #   limits:
+        #     cpu: 100m
+        #     memory: 1024Mi
+      volumes:
+      - name: postgres-pv-claim
+        persistentVolumeClaim:
+          claimName: postgres-pv-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coineus-frontend
+  labels:
+    app: coineus-frontend
+spec:
+  selector:
+    app: coineus-frontend
+  type: ClusterIP
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coineus-frontend
+  labels:
+    app: coineus-frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: coineus-frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 2
+      maxSurge: 2
+  template:
+    metadata:
+      labels:
+        app: coineus-frontend
+    spec:
+      containers:
+      - name: coineus-frontend
+        image: safderun/coineus-frontend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 1
+        # resources:
+        #   limits:
+        #     cpu: 100m
+        #     memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coineus-price-service
+  labels:
+    app: coineus-price-service
+spec:
+  selector:
+    app: coineus-price-service
+  type: ClusterIP
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coineus-price-service
+  labels:
+    app: coineus-price-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coineus-price-service
+  template:
+    metadata:
+      labels:
+        app: coineus-price-service
+    spec:
+      containers:
+      - name: coineus-price-service
+        image: safderun/coineus-price-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        # resources:
+        #   limits:
+        #     cpu: 100m
+        #     memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: coineus-server
+  labels:
+    app: coineus-server
+spec:
+  selector:
+    app: coineus-server
+  type: ClusterIP
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coineus-server
+  labels:
+    app: coineus-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: coineus-server
+  template:
+    metadata:
+      labels:
+        app: coineus-server
+    spec:
+      containers:
+      - name: coineus-server
+        image: safderun/coineus-server:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        env:
+        - name: POSTGRE_DB_URI
+          value: "postgres://postgres:postgres123@coineus-db:5432/coineusdb"
+        - name: JWT_SIGNING_KEY
+          value: mysupersecretkey
+        - name: JWT_EXP_TIME
+          value: "96"
+        - name: RETRY_COUNT
+          value: "5"
+        - name: RETRY_COOLDOWN
+          value: "2"
+        - name: PORT
+          value: "80"
+        - name: PRICE_SERVICE_BASE_URL
+          value: http://coineus-price-service
+        # resources:
+        #   limits:
+        #     cpu: 100m
+        #     memory: 128Mi

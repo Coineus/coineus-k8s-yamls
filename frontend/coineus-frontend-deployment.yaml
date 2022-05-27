@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coineus-frontend
+  labels:
+    app: coineus-frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: coineus-frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 2
+      maxSurge: 2
+  template:
+    metadata:
+      labels:
+        app: coineus-frontend
+    spec:
+      containers:
+      - name: coineus-frontend
+        image: safderun/coineus-frontend:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 1
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 1
+        # resources:
+        #   limits:
+        #     cpu: 100m
+        #     memory: 64Mi

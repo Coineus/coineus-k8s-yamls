@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coineus-server
+  labels:
+    app: coineus-server
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: coineus-server
+  template:
+    metadata:
+      labels:
+        app: coineus-server
+    spec:
+      containers:
+      - name: coineus-server
+        image: safderun/coineus-server:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        env:
+        - name: POSTGRE_DB_URI
+          value: "postgres://postgres:postgres123@coineus-db:5432/coineusdb"
+        - name: JWT_SIGNING_KEY
+          value: mysupersecretkey
+        - name: JWT_EXP_TIME
+          value: "96"
+        - name: RETRY_COUNT
+          value: "5"
+        - name: RETRY_COOLDOWN
+          value: "2"
+        - name: PORT
+          value: "80"
+        - name: PRICE_SERVICE_BASE_URL
+          value: http://coineus-price-service
+        # resources:
+        #   limits:
+        #     cpu: 100m
+        #     memory: 128Mi

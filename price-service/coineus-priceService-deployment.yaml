@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coineus-price-service
+  labels:
+    app: coineus-price-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coineus-price-service
+  template:
+    metadata:
+      labels:
+        app: coineus-price-service
+    spec:
+      containers:
+      - name: coineus-price-service
+        image: safderun/coineus-price-service:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        # resources:
+        #   limits:
+        #     cpu: 100m
+        #     memory: 128Mi
